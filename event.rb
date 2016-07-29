@@ -20,6 +20,18 @@ class Event
 		}
 	end
 
+	def report
+		puts """
+			--++ #{@name} ++--
+		
+		Code:________#{@code}
+		Air:_________#{@effects[:air]}
+		Shiels:______#{@effects[:shield]}
+		Power:_______#{@effects[:power]}
+		Rescue Time:_#{@effects[:rescue_time]}
+		"""
+	end
+	
 	def effect
 		$state[:air].amount += @effects[:air]
 		$state[:shield].amount += @effects[:shield]

@@ -16,16 +16,16 @@ require_relative "state"
 
 #scanner
 $state = {
-air: State.new("Air", 130, 1200),
-shield: State.new("Shield", 140, 650),
-power: State.new("Power", 10, 5000),
+air: State.new("Air", 1300, 1200),
+shield: State.new("Shield", 1400, 650),
+power: State.new("Power", 1000, 5000),
 rescue_time: State.new("Hours Until Rescue", rand(16..21), nil),
 total_time: State.new("Total Time", 0, nil)
 }
 
 $robots = {
 empty: Robot.new("Empty",true, 0),
-jack: Robot.new("Jack", true, 4),
+jack: Robot.new("Jack", true, 1),
 dazh: Robot.new("Dazh", true, 3),
 marvin: Robot.new("Marvin", true, 4),
 laneny: Robot.new("Laneney", true)
@@ -45,9 +45,9 @@ workshop: Unit.new("Workshop", true, 1, true)
 
 $events = {
 nothing: Event.new("Nothing", 0),
-air_loss: Event.new("Air Loss", 1, -40, 0),
-meteor: Event.new("Meteor", 2, 0, -15),
-battery_fail: Event.new("Battery Fail", 3, 0, 0, -50),
+air_loss: Event.new("Air Loss", 1, rand(-50..-30), 0),
+meteor: Event.new("Meteor", 2, 0, rand(-20..-10)),
+battery_fail: Event.new("Battery Fail", 3, 0, 0, rand(-60..-40)),
 miracle: Event.new("Miracle!!!", 4, 40, 20, 60)
 }
 
@@ -65,14 +65,82 @@ $units.each_value{|v| v.robot = $robots[:empty]}
 
 def help
 	puts """
-	q  - quit \ to Main
-	m  - move robot
+	q  - quit \\ Main
+	m  - maintain unit or robot
+	s  - send to room (Workshop or HQ)
 	n  - next turn
+	v  - user viewer
+	v? - code list for the viewer
 	rs - robot status
+	ru - robot upgrade
+	r? - robot help
+	rr - robot reset upgrades
 	us - unit status
+	uu - unit upgrade
+	u? - unit help
 	t  - test
-	tt - test2
+	t2 - test2
 	"""
+end
+
+def help_robot
+	puts """
+		..:: ROBOTS ABILITY LIST ::..
+	
+	>> All robots can maintian Units and Robots.
+	>> All robots can fix Units and Robots.
+	>> All robots can Upgrade other Robots.
+	
+	>> When Laneny is maintaining (m) the Workshop
+	   Other robots can join and help (s) if they are at level 4.
+	"""
+	
+	puts "\t>> Jack add +5 AIR and +2 SHIELD.\n" if $robots[:jack].level == 2
+	puts "\t>> Jack add +10 AIR and +4 SHIELD.\n" if $robots[:jack].level >= 3
+	puts "\t   Can Help (s) Laneny in the Workshop to Upgrade the AirCon.\n" if $robots[:jack].level == 4
+	puts ""
+	puts "\t>> Dazh hints what would be the next event.\n" if $robots[:dazh].level >= 2
+	puts "\t   Will keep an open eye for cool stuff while maintining (m) the Viewer.\n" if $robots[:dazh].level >= 3
+	puts "\t   Can Help (s) Laneny in the Workshop to Upgrade the Viewer.\n" if $robots[:dazh].level == 4
+	puts ""
+	puts "\t>> Marvin add +5 POWER while Maintaining the Engine.\n" if $robots[:marvin].level == 2
+	puts "\t>> Marvin add +10 POWER while Maintaining the Engine.\n" if $robots[:marvin].level >= 3
+	puts "\t   Can Help (s) Laneny in the Workshop to Upgrade the Engine.\n" if $robots[:marvin].level == 4
+end
+
+def help_unit
+	puts "\t		..:: UNITS ABILITY LIST ::.."
+	puts ""	
+	puts "\t>> the AirCon losses 15 AIR every hour" if $units[:aircon].level == 1
+	puts "\t>> the AirCon is Balanced" if $units[:aircon].level == 2
+	puts "\t>> the AirCon gain 10 AIR every hour" if $units[:aircon].level == 3
+	puts ""
+	puts "\t>> the ShieldGen losses 3 AIR every hour" if $units[:shieldgen].level == 1
+	puts "\t>> the ShieldGen is Balanced" if $units[:shieldgen].level == 2
+	puts "\t>> the ShieldGen gain 5 AIR every hour" if $units[:shieldgen].level == 3	
+	puts ""
+	puts "\t>> the Engine losses 15 POWER every hour" if $units[:engine].level == 1
+	puts "\t>> the Engine losses 10 POWER every hour" if $units[:engine].level == 2
+	puts "\t>> the Engine losses 5 POWER every hour" if $units[:engine].level == 3
+	puts "\t>> the Engine losses 2 POWER every hour" if $units[:engine].level == 4
+	puts ""	
+	puts "\t>> the Viewer Shows (v) the code of the next event, if Maintained." if $units[:viewer].level == 1
+	puts "\t>> the Viewer Shows (v) the code of the next 2 events, if Maintained." if $units[:viewer].level == 2
+	puts "\t>> the Viewer Shows (v) the code of the next 3 events, if Maintained." if $units[:viewer].level == 3
+	puts "\t   If Dazh is upgraded to level 2, and Maintaining the Viewer, he will give a heads up."
+	puts """
+	
+	>> GPS is needed to operate the Beacon.
+	
+	>> Beacon is needed to help the rescue team locate the StarShip.
+	
+	>> HQ - Where robots go to rest
+	
+	>> Workshop - The place to Upgrade the ship's units.
+	   :+: When Laneny is Maintaining (m) the Workshop he adds +3 AIR, +1 SHIELD, +2 POWER
+	       Any other robot that Maintain (m) the Workshop adds +1 AIR, +1 SHIELD, +2 POWER 
+	   :+: When Laneny is Maintaining (m) the Workshop
+	       he can be assist (s) by level 4 robots to upgrade the ship's units."""		
 end
 
 def prompt
@@ -409,7 +477,7 @@ def status
 	puts "	+ #{$state[:rescue_time].name}:___#{$state[:rescue_time].amount}"
 	puts "	+ #{$state[:total_time].name}:___________#{$state[:total_time].amount}"
 	puts ""
-	if $units[:viewer].robot == $robots[:dazh] && $robots[:dazh].level == 4
+	if $units[:viewer].robot == $robots[:dazh] && $robots[:dazh].level >= 2
 		if $event_order[0] == $events[:nothing] then puts ">> Dazh: We can expect a quiet hour." end
 		if $event_order[0] == $events[:air_loss] then puts ">> Dazh: I see some air wooshing out from the right. We should perpare for an air loss." end
 		if $event_order[0] == $events[:meteor] then puts ">> Dazh: We should brace ourself, a meteor is on his way to meet us." end
@@ -586,15 +654,18 @@ def main
 			robot_reset
 		when "rs"
 			robot_status
+		when "r?"
+			help_robot
 		when "us"
 			unit_status
 		when "uu"
-			unit_upgrade		
+			unit_upgrade
+		when "u?"
+			help_unit
 		when "v"
 			view
 		when "v?"
-			view_code
-		
+			view_code		
 		when "slu"
 			state_limit_update
 		when "t1"	
@@ -602,30 +673,14 @@ def main
 			$state[:shield].amount += 30
 			$state[:power].amount += 60		
 		when "t2"
-			a = ["yes", "no", "black", "white"]
-			a2 = a.sample(2)
-			puts ""
-			puts a2
-			puts ""
-			a2 = a.sample(4)
-			puts a2[2]
-			puts ""
-			puts a2
-		when "t3"
-			#view
-			puts $event_order[1]
-		when "t4"
-			a = [1,2,3,4]
-			puts "true" if a.include?(2)
-			puts "also true" if not a.include?(5)
-			puts "was not sepoose to be here" if not a.include?(3)
-			
-			
+			puts $events[:air_loss].report
+			puts $events[:meteor].report
+			puts $events[:battery_fail].report
 		when "tl"
 			test = list($robots, operative, "Those are the ROOBTS", "Which robot would you like to hug?", "It didn't work")
 			puts "this: #{test}"
 		else
-			puts "Try to Type again."
+			puts ">> Try to Type again."
 		end
 	end
 end
