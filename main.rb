@@ -109,7 +109,14 @@ $units.each_value{|v| v.robot = $empty}
 
 #-------GAME-MACHANIZM------
 
+$check = false
+
+def def_check(def_name)
+	puts "Def Check: #{def_name}." if $check == true
+end
+
 def help
+	def_check("help")
 	puts """
 	q  - quit \\ Main
 	m  - maintain unit or robot
@@ -130,31 +137,40 @@ def help
 end
 
 def help_robot
+	def_check("help_robot")
 	puts """
 		..:: ROBOTS ABILITY LIST ::..
 	
-	>> All robots can maintian Units and Robots.
-	>> All robots can fix Units and Robots.
-	>> All robots can Upgrade other Robots.
-	
-	>> When Laneny is maintaining (m) the Workshop
-	   Other robots can join and help (s) if they are at level 4.
+	>> Can maintian (m) Units and Robots.
+	>> Can fix (f) Units and Robots.
+	>> Can Upgrade other Robots (ru).
 	"""
-	
-	puts "\t>> Jack add +5 AIR and +2 SHIELD.\n" if $jack.level == 2
-	puts "\t>> Jack add +10 AIR and +4 SHIELD.\n" if $jack.level >= 3
-	puts "\t   Can Help (s) Laneny in the Workshop to Upgrade the AirCon.\n" if $jack.level == 4
+	puts "\t>> Jack:"
+	puts "\t   Nothing special yet." if $jack.level == 1
+	puts "\t   Adds +5 AIR and +2 SHIELD." if $jack.level == 2
+	puts "\t   Adds +10 AIR and +4 SHIELD." if $jack.level >= 3
+	puts "\t   Can Help (s) Laneny in the Workshop to Upgrade the AirCon." if $jack.level == 4
 	puts ""
-	puts "\t>> Dazh hints what would be the next event.\n" if $dazh.level >= 2
-	puts "\t   Will keep an open eye for cool stuff while maintining (m) the Viewer.\n" if $dazh.level >= 3
-	puts "\t   Can Help (s) Laneny in the Workshop to Upgrade the Viewer.\n" if $dazh.level == 4
+	puts "\t>> Dazh:"
+	puts "\t   Nothing special yet." if $dazh.level == 1
+	puts "\t   Hints what would be the next event." if $dazh.level >= 2
+	puts "\t   Will keep an open eye for cool stuff while maintining (m) the Viewer." if $dazh.level >= 3
+	puts "\t   Can Help (s) Laneny in the Workshop to Upgrade the Viewer." if $dazh.level == 4
 	puts ""
-	puts "\t>> Marvin add +5 POWER while Maintaining the Engine.\n" if $marvin.level == 2
-	puts "\t>> Marvin add +10 POWER while Maintaining the Engine.\n" if $marvin.level >= 3
-	puts "\t   Can Help (s) Laneny in the Workshop to Upgrade the Engine.\n" if $marvin.level == 4
+	puts "\t>> Marvin:"
+	puts "\t   Nothing special yet." if $marvin.level == 1
+	puts "\t   Adds +5 POWER while Maintaining the Engine." if $marvin.level == 2
+	puts "\t   Adds +10 POWER while Maintaining the Engine." if $marvin.level >= 3
+	puts "\t   Can Help (s) Laneny in the Workshop to Upgrade the Engine." if $marvin.level == 4
+	puts ""
+	puts "\t>> Laneny:"
+	puts "\t   When maintaining (m) the Workshop +3 AIR, +1 SHIELD and +2 POWER."
+	puts "\t   When level 4 robots join (s) they help upgrade the ship's units."
+	puts ""
 end
 
 def help_unit
+	def_check("help_unit")
 	puts "\t		..:: UNITS ABILITY LIST ::.."
 	puts ""	
 	puts "\t>> the AirCon losses 15 AIR every hour" if $aircon.level == 1
@@ -190,6 +206,7 @@ def help_unit
 end
 
 def prompt
+	def_check("prompt")
 	puts ">> What now?"
 	print ">> "
 	$command = gets.chomp.downcase
@@ -197,12 +214,14 @@ def prompt
 end
 
 def line
+	def_check("line")
 	puts ""
 	puts "========================================"
 	puts ""
 end
 
 def end_game
+	def_check("end_game")
 	if $air.amount <= 0 || $shield.amount <= 0
 		puts ">> The Game has ENDED! You Have DIED! No worries!"
 		puts ""
@@ -215,12 +234,14 @@ def end_game
 end
 
 def dictionary(hash)
+	def_check("dictionary")
 	dict = {}
 	hash.each_key {|k| dict[k.to_s[0]] = k.to_s}
 	dict
 end
 
 def full_list(hash, heading_text, question_text, else_text)
+	def_check("full_list")
 	list = hash
 	list_sort = list.sort
 	list_dict = dictionary(list)
@@ -248,6 +269,7 @@ def full_list(hash, heading_text, question_text, else_text)
 end
 
 def robot_oper_list
+	def_check("robot_oper_list")
 	robot_oper_list = $robots.select{|k,v| v.operative && v.level > 0}
 	robot_oper_dict = dictionary(robot_oper_list)
 	line
@@ -272,6 +294,7 @@ def robot_oper_list
 end
 
 def upgrade_list(hash)
+	def_check("upgrade_list")
 	list = hash.select{|k,v| v.operative && v.level.between?(1,3)}
 	list_dict = dictionary(list)
 	
@@ -297,6 +320,7 @@ def upgrade_list(hash)
 end
 
 def robot_upgrade
+	def_check("robot_upgrade")
 	upgraded_robot = upgrade_list($robots)
 	upgrading_robot = robot_oper_list
 	if upgraded_robot == upgrading_robot
@@ -308,6 +332,7 @@ def robot_upgrade
 end
 
 def unit_upgrade
+	def_check("unit_upgrade")
 	upgraded_unit = upgrade_list($units)
 	upgrading_robot = robot_oper_list
 	$units[upgraded_unit].robot_work($robots[upgrading_robot])
@@ -315,6 +340,7 @@ def unit_upgrade
 end
 
 def state_limit_update
+	def_check("state_limit_update")
 	state = full_list($state, "State List", "Which State would you like yo Upgrade?", "No State was selected.")
 	puts ">> What is the new limit?"
 	user_input = gets.chomp.to_i
@@ -326,11 +352,13 @@ def state_limit_update
 end
 
 def robot_reset
+	def_check("robot_reset")
 	robot = robot_oper_list
 	$robots[robot].reset_upgrade
 end
 	
 def fix
+	def_check("fix")
 	destination = fix_list
 	robot = $robots[robot_oper_list]
 	if $units.has_value?($units[destination])
@@ -343,6 +371,7 @@ def fix
 end
 
 def fix_list
+	def_check("fix_list")
 	robot_broken_list = $robots.select{|k,v| v.operative == false}
 	unit_broken_list = $units.select{|k,v| v.operative == false && v.level.between?(1,4)}
 	fix_list = unit_broken_list.merge(robot_broken_list)
@@ -377,12 +406,14 @@ def fix_list
 end
 
 def maintain
+	def_check("maintain")
 	destination = maintain_list
 	robot = $robots[robot_oper_list]
 	$units[destination].robot_work(robot)
 end
 
 def maintain_list
+	def_check("maintain_list")
 	unit_maintain_list = $units.select{|k,v| v.operative && v.level.between?(1,4)}
 	unit_maintain_list_dict = dictionary(unit_maintain_list)
 	
@@ -408,6 +439,7 @@ def maintain_list
 end	
 
 def list(hash, selector, heading_text, question_text, else_text)
+	def_check("list")
 	hash_list = hash.select{|k,v| v.selector}
 	hash_list_dict = dictionary(hash_list)
 	
@@ -433,6 +465,7 @@ def list(hash, selector, heading_text, question_text, else_text)
 end
 	
 def room_oper_list
+	def_check("room_oper_list")
 	unit_list = $units.select{|k,v| v.operative && v.room == true}
 	unit_list_dict = dictionary(unit_list)
 	
@@ -460,6 +493,7 @@ def room_oper_list
 end
 
 def robot_to_storage
+	def_check("robot_to storage")
 	robot = robot_oper_list
 	unit = room_oper_list
 	if $units[unit].room == true && $units[unit].level == 1 && $robots[robot].level < 4
@@ -475,17 +509,20 @@ def robot_to_storage
 end
 
 def robot_status
+	def_check("robot_status")
 	robot = full_list($robots, "Full List Robots", "Which robot would you like to choose?", "No robot was selected.")
 	#robot = robot_oper_list
 	$robots[robot].report
 end
 
 def unit_status
+	def_check("unit_status")
 	unit = full_list($units, "Full List Units", "Which unit would you choose?", "No unit was selected.")
 	$units[unit].report
 end
 
 def fix_status
+	def_check("fix_status")
 	puts ""
 	puts "       FIX     "
 	puts "   ---UNITS--- "
@@ -499,6 +536,7 @@ def fix_status
 end
 	
 def view
+	def_check("view")
 	if $viewer.operative && $viewer.maned
 		if $viewer.level >= 1 then puts "Next hour event code: #{$event_order[0].code}" end
 		if $viewer.level >= 2 then puts "In 2 hours event code: #{$event_order[1].code}" end
@@ -508,12 +546,14 @@ def view
 end
 
 def view_code
+	def_check("view")
 	$events.each_value {|v| puts "?? #{v.code} - #{v.name}"}
 end
 	
 #------SHIP-MACHANIZM------
 
 def status
+	def_check("status")
 	puts ""
 	puts "      	==== M A I N ===="
 	puts ""
@@ -533,6 +573,7 @@ def status
 end
 
 def state_limit(state)
+	def_check("state_limit")
 	state.amount = state.limit if state.amount > state.limit
 	state.amount = 0 if state.amount < 0
 end
@@ -541,6 +582,7 @@ end
 #--------NEXT-TURN---------
 
 def next_turn
+	def_check("next")
 	puts ""
 	
 	event_happened
@@ -645,6 +687,7 @@ end
 
 
 def event_happened
+	def_check("event_happened")
 	event_current = $event_order.shift
 	event_current.effect
 	puts ">> #{event_current.name} occurred."
@@ -659,6 +702,7 @@ $unit_dict = dictionary($units)
 
 
 def main
+	def_check("main")
 	while true
 		
 		line
@@ -700,6 +744,8 @@ def main
 			view_code		
 		when "slu"
 			state_limit_update
+		when "dc"
+			$check = !$check
 		when "t1"	
 			$air.amount += 30
 			$shield.amount += 30
@@ -710,6 +756,8 @@ def main
 			puts $events[:battery_fail].report
 		when "t3"
 			puts $event_order[0].name
+		when "t4"
+			$jack.level += 1
 		when "tl"
 			test = list($robots, operative, "Those are the ROOBTS", "Which robot would you like to hug?", "It didn't work")
 			puts "this: #{test}"
