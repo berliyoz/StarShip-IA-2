@@ -69,7 +69,7 @@ class Robot
 	def upgrade
 		@level += 1
 		robot_out
-		puts ">> #{@name} is now level: #{@level}."
+		puts "\t>> #{@name} is now level: #{@level}."
 	end
 
 	def reset_upgrade

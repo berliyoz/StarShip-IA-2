@@ -24,17 +24,14 @@ class Unit
 			puts "		Storage:___Empty"
 		else 
 			print "		Storage:___"
-			@storage.each{|v| print "#{v.name} "}
+			storage_list = []
+			@storage.each {|v| storage_list.push(v.name)}
+			print storage_list
 			puts ""
 		end
-		puts ""
 
-		#a = @storage.name.join "; "
-		#a.each{|v| print v.name}
 	end
 
-
-	
 	def breakdown
 		@operative = false if @operative == true
 		puts "#{@name} malfunction."

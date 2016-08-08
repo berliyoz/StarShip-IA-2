@@ -2,12 +2,23 @@ require_relative "robot"
 require_relative "event"
 require_relative "unit"
 require_relative "state"
-#require_relative "test"
+require_relative "story"
+
+def def_check(def_name)
+	puts "Def Check: #{def_name}." if $check == true
+end
+
+def find(good_event)
+	def_check("find")
+	if $viewer.robot == $dazh && $dazh.level == 3
+		return good_event
+	else 
+		$nothing
+	end
+end
 
 =begin
-  
   -++ INFO ++--
-  
 1. $units[:unit].room == true ===> can use storage
 
 =end
@@ -18,9 +29,10 @@ require_relative "state"
 $state = {
 air: State.new("Air", 130, 140),
 shield: State.new("Shield", 40, 120),
-power: State.new("Power", 20, 500),
+power: State.new("Power", 200, 500),
 rescue_time: State.new("Hours Until Rescue", rand(16..21), nil),
-total_time: State.new("Total Time", 0, nil)
+total_time: State.new("Total Time", 0, nil),
+story_counter: State.new("Story Counter", 0, nil)
 }
 
 $air = $state[:air]
@@ -28,11 +40,12 @@ $shield = $state[:shield]
 $power = $state[:power]
 $rescue_time = $state[:rescue_time]
 $total_time = $state[:total_time]
+$story_counter = $state[:story_counter]
 
 $robots = {
 empty: Robot.new("Empty",true, 0),
-jack: Robot.new("Jack", true, 1),
-dazh: Robot.new("Dazh"),
+jack: Robot.new("Jack", true),
+dazh: Robot.new("Dazh", true),
 marvin: Robot.new("Marvin"),
 laneny: Robot.new("Laneney")
 }
@@ -46,10 +59,10 @@ $laneny = $robots[:laneny]
 $units = {
 aircon: Unit.new("AirCon", true),
 shieldgen: Unit.new("ShieldGen", true),
-gps: Unit.new("GPS"),
-beacon: Unit.new("Beacon"),
-viewer: Unit.new("Viewer"),
-engine: Unit.new("Engine"),
+gps: Unit.new("GPS", true),
+beacon: Unit.new("Beacon", true),
+viewer: Unit.new("Viewer", true, 3),
+engine: Unit.new("Engine", true),
 hq: Unit.new("HQ", true, 10, true),
 workshop: Unit.new("Workshop", true, 1, true)
 }
@@ -68,39 +81,48 @@ nothing: Event.new("Nothing", 0),
 air_loss: Event.new("Air Loss", 1, rand(-50..-30), 0),
 meteor: Event.new("Meteor", 2, 0, rand(-20..-10)),
 battery_fail: Event.new("Battery Fail", 3, 0, 0, rand(-60..-40)),
-miracle: Event.new("Miracle!!!", 4, 40, 20, 60)
+miracle: Event.new("Miracle!!!", 4, 40, 20, 60),
+air_balloon: Event.new("Air Balloon", 5, 20),
+battery_found: Event.new("Good Battery Magic", 6, 0, 0, rand(30..40))
 }
 
-nothing = $events[:nothing]
-air = $events[:air_loss]
-meteor = $events[:meteor]
-battery = $events[:battery_fail]
-miracle = $events[:miracle]
+$nothing = $events[:nothing]
+$air_loss = $events[:air_loss]
+$meteor = $events[:meteor]
+$bat_loss = $events[:battery_fail]
+$miracle = $events[:miracle]
+$balloon = $events[:air_balloon]
+$bat_found = $events[:battery_found]
+
+
+
 
 $event_order = [
-nothing,
-nothing,
-nothing,
-nothing,
-nothing,
-nothing,
-nothing,
-air,
-meteor,
-battery,
-nothing,
-air,
-battery,
-miracle,
-nothing,
-nothing,
+"balloon",
+#"balloon",
+#"balloon",
+#"battery",
+#"battery",
+#"battery",
+#$nothing,
+#$nothing,
+#$nothing,
+$air_loss,
+$nothing,
+$nothing,
+$nothing,
+$nothing,
+$air_loss,
+$meteor,
+$bat_loss,
+$nothing,
+$air_loss,
+$bat_loss,
+$miracle,
+$nothing,
+$nothing,
 
 ]
-
-
-$encounter = {
-
-}
 
 $robots.each_value{|v| $hq.storage.push(v) if v.level >= 1}
 $robots.each_value{|v| v.robot = $empty}
@@ -111,9 +133,6 @@ $units.each_value{|v| v.robot = $empty}
 
 $check = false
 
-def def_check(def_name)
-	puts "Def Check: #{def_name}." if $check == true
-end
 
 def help
 	def_check("help")
@@ -240,108 +259,17 @@ def dictionary(hash)
 	dict
 end
 
-def full_list(hash, heading_text, question_text, else_text)
-	def_check("full_list")
-	list = hash
-	list_sort = list.sort
-	list_dict = dictionary(list)
-	
-	line
-	puts ""
-	puts "  === #{heading_text} ==="
-	puts ""
-	list_sort.each {|k,v| puts "  :x: #{v.name}"}
-	puts ""
-	puts ">> #{question_text}"
-	print ">> "
-	user_input = gets.chomp.downcase
-	main if user_input == "q"
-	if user_input.length == 1 && list_dict.has_key?(user_input)
-		output = list_dict[user_input]
-	elsif list_dict.has_value?(user_input)
-		output = user_input
-	else
-		puts ">> #{else_text}"
-		puts ""
-		main
-	end
-	output.to_sym
-end
-
-def robot_oper_list
-	def_check("robot_oper_list")
-	robot_oper_list = $robots.select{|k,v| v.operative && v.level > 0}
-	robot_oper_dict = dictionary(robot_oper_list)
-	line
-	puts ""
-	puts "  --++ Robots Oper List ++--"
-	puts ""
-	robot_oper_list.each {|k,v| puts "  :+: #{v.name} is in #{v.unit.name}"}
-	puts ""
-	puts ">> Which Robot Would you like to choose?"
-	print ">> "
-	user_input = gets.chomp.downcase
-	main if user_input == "q"
-	if user_input.length == 1 && robot_oper_dict.has_key?(user_input)
-		output = robot_oper_dict[user_input]
-	elsif robot_oper_dict.has_value?(user_input)
-		output = user_input
-	else
-		puts ">> Didn't MOVE any Robot."
-		main
-	end
-	output.to_sym
-end
-
-def upgrade_list(hash)
-	def_check("upgrade_list")
-	list = hash.select{|k,v| v.operative && v.level.between?(1,3)}
-	list_dict = dictionary(list)
-	
-	line
-	puts ""
-	puts "   == U P G R A D E   L I S T =="
-	puts ""
-	list.each_value{|v| puts "  :+: #{v.name}"}
-	puts ""
-	puts ">> Which one would you like to Upgrade?"
-	print ">> "
-	user_input = gets.chomp.downcase
-	main if user_input == "q"
-	if user_input.length == 1 && list_dict.has_key?(user_input)
-		output = list_dict[user_input]
-	elsif list_dict.has_value?(user_input)
-		output = user_input
-	else
-		puts ">> Nothing was selected for Upgrade."
-		main
-	end
-	output.to_sym
-end
-
 def robot_upgrade
 	def_check("robot_upgrade")
-	upgraded_robot = upgrade_list($robots)
-	upgrading_robot = robot_oper_list
-	if upgraded_robot == upgrading_robot
-		puts ">> A robot can not Upgrade itsef."
-		main
-	else
-		$robots[upgraded_robot].robot_work($robots[upgrading_robot])
-	end
-end
-
-def unit_upgrade
-	def_check("unit_upgrade")
-	upgraded_unit = upgrade_list($units)
-	upgrading_robot = robot_oper_list
-	$units[upgraded_unit].robot_work($robots[upgrading_robot])
-	$units[upgraded_unit].storage.push($robots[upgrading_robot])
+	upgrading_robot = list($robots, "between", 1, 4, "AVAILABLE ROBOT", ">> Which Robot would you like to assign for the job?", ">> No Robot was selected.", nil)
+	upgraded_robot = list($robots, "between", 1, 3, "ROBOTS UPGRADE", ">> Which Robot would you like to  upgrade?", ">> No Robots was selected.", ">> All Robots are at MAX level.")
+	if upgraded_robot == upgrading_robot then puts "\t>> A robot cannot Upgrade itsef."; main end
+	$robots[upgraded_robot].robot_work($robots[upgrading_robot])
 end
 
 def state_limit_update
 	def_check("state_limit_update")
-	state = full_list($state, "State List", "Which State would you like yo Upgrade?", "No State was selected.")
+	state = list($state, "full", nil, nil, "State List", ">>Which State would you like to Update?", ">> No State was selected.", nil)
 	puts ">> What is the new limit?"
 	user_input = gets.chomp.to_i
 	if user_input == 0
@@ -353,109 +281,93 @@ end
 
 def robot_reset
 	def_check("robot_reset")
-	robot = robot_oper_list
+	robot = list($robots, "between", 2, 4, "ROBOT RESET", ">>Which Robot would you like to Reset?", ">> No robots was selected.", ">> No Robots to select.")
 	$robots[robot].reset_upgrade
 end
-	
-def fix
-	def_check("fix")
-	destination = fix_list
-	robot = $robots[robot_oper_list]
-	if $units.has_value?($units[destination])
-		$units[destination].robot_work(robot)
-	elsif $robots.has_value?($robots[destination])
-		$robots[destination].robot_work(robot)
-	else
-		puts "??? Something went worng with  >> def fix <<"
-	end
+
+def robot_fix
+	def_check("robot_fix")
+	fixing = list($robots, "between", 1, 4, "AVAILABLE ROBOTS", ">> Which Robot would you like to assign for the job?", "No Robot was selected.", ">> All Robots are Broken.")
+	fixed = list($robots, "oper_false", nil, nil, "ROBOTS for FIXING", ">> Which Robot would you like to Fix?", ">> No Robot was selected.", ">> All Robots are Operational.")
+	$robots[fixed].robot_work($robots[fixing])
 end
 
-def fix_list
-	def_check("fix_list")
-	robot_broken_list = $robots.select{|k,v| v.operative == false}
-	unit_broken_list = $units.select{|k,v| v.operative == false && v.level.between?(1,4)}
-	fix_list = unit_broken_list.merge(robot_broken_list)
-	fix_list_dict = dictionary(fix_list)
-	
-	line
-	puts "   ==== F I X ===="
-	puts ""
-	puts "     -- ROBOTS --"
-	puts ""
-	robot_broken_list.each_value {|v| puts "  :+: #{v.name}"}
-	puts ""
-	puts "     -- UNITS --"
-	puts ""
-	unit_broken_list.each_value {|v| puts"  :+: #{v.name}"}
-	puts ""
-	
-	line
-	puts ">> What would you like to fix?"
-	print ">> "
-	user_input = gets.chomp.downcase
-	main if user_input == "q"
-	if user_input.length == 1 && fix_list_dict.has_key?(user_input)
-		output = fix_list_dict[user_input]
-	elsif fix_list_dict.has_value?(user_input)
-		output = user_input
-	else
-		puts ">> Nothing was choosen to be FIXED."
-		main
-	end
-	output.to_sym
+def unit_fix
+	def_check("unit_fix")
+	fixing = list($robots, "between", 1, 4, "AVAILABLE ROBOTS", ">> Which Robot would you like to assign for the job?", ">> No Robot was selected.", "All Robots are Broken.")
+	fixed = list($units, "oper_false", nil, nil , "UNITS for FIXING", ">> Which Unit would you like to Fix?", ">> No Unit was selescted.", ">> ALL Units are Operational.")
+	$units[fixed].robot_work($robots[fixing])
 end
 
 def maintain
 	def_check("maintain")
-	destination = maintain_list
-	robot = $robots[robot_oper_list]
-	$units[destination].robot_work(robot)
+	robot = list($robots, "between", 1, 4, "AVAILABLE ROBOTS", ">> Which Robot would you like to assign for the job?", ">> No Robot was selected.", nil)
+	destination = list($units, "between", 1, 4, "OPERATIONAL UNITS", ">> Which Unit would you like to Maintain?", ">> No unit was selected.", ">> All Units are Broken.")
+	$units[destination].robot_work($robots[robot])
 end
 
-def maintain_list
-	def_check("maintain_list")
-	unit_maintain_list = $units.select{|k,v| v.operative && v.level.between?(1,4)}
-	unit_maintain_list_dict = dictionary(unit_maintain_list)
-	
-	line
+def robots_info
+	def_check("robot_info")
+	list = $robots.select{|k,v| v.level >= 1}
+	puts "\t..:: ROBOT INFO LIST ::.."
 	puts ""
-	puts "\t    ==== M A I N T A I N ===="
-	puts ""
-	unit_maintain_list.each_value {|v| puts "\t:+: #{v.name} maintained by: #{v.robot.name}"}
-	puts ""
-	puts ">> What would you like to maintain?"
-	print ">> "
-	user_input = gets.chomp.downcase
-	main if user_input == "q"
-	if user_input.length == 1 && unit_maintain_list_dict.has_key?(user_input)
-		output = unit_maintain_list_dict[user_input]
-	elsif unit_maintain_list_dict.has_value?(user_input)
-		output = user_input
-	else
-		puts ">> Nothing was choosen to Maintain."
-		main
-	end
-	output.to_sym
-end	
+	list.each_value{|v| puts "??? #{v.name}, Level: #{v.level}, Unit: #{v.unit.name	}."}
+end
 
-def list(hash, selector, heading_text, question_text, else_text)
+def units_info
+	def_check("unit_info")
+	list = $units.select{|k,v| v.level <= 4}
+	list_hq = $robots.select{|k,v| v.unit == $hq && v.level > 0}
+	list_workshop = $robots.select{|k,v| v.unit == $workshop && v.level > 0}
+	puts "\t..:: UNITS INFO LIST ::.."
+	puts ""
+	list.each_value{|v| puts ":+: #{v.name}: #{v.level}, #{v.robot.name}."}
+	puts ""
+	puts "\t    ..:: HQ ::.."
+	puts ""
+	if $hq.storage == [] then puts ":+: There are no Robots Resting in HQ." end
+	list_hq.each_value{|v| print ":+: #{v.name}  "}
+	puts ""
+	puts ""
+	puts "\t ..:: Workshop ::.."
+	if $workshop.storage == [] then puts "\n:+: There are no Robots Helping in the Workshop." end
+	list_workshop.each_value{|v| print "   :+: #{v.name} "}
+	puts ""
+	
+	end
+
+def list(hash, selector, val_1, val_2, heading_text, question_text, else_text, empty)
 	def_check("list")
-	hash_list = hash.select{|k,v| v.selector}
-	hash_list_dict = dictionary(hash_list)
+	case selector
+	when "full"
+		list = hash
+	when "oper_true"
+		list = hash.select{|k,v| v.operative}
+	when "oper_false"
+		list = hash.select{|k,v| v.operative == false && v.room == false}
+	when "between"
+		list = hash.select{|k,v| v.operative && v.level.between?(val_1, val_2)}
+	when "room"
+		list = $units.select{|k,v| v.operative && v.room == true}
+	end
+
+	if list == {} then puts empty; main end
+	list.sort
+	list_dict = dictionary(list)
 	
 	line
 	puts ""
 	puts "   ==== #{heading_text} ===="
 	puts ""
-	hash_list.each_value {|v| puts "   :+: #{v.name}"}
+	list.each_value {|v| puts "   :+: #{v.name}"}
 	puts ""
 	puts question_text
 	print ">> "
 	user_input = gets.chomp.downcase
 	main if user_input == "q"
-	if user_input.length == 1 && hash_list_dict.has_key?(user_input)
-		output = hash_list_dict[user_input]
-	elsif hash_list_dict.has_value?(user_input)
+	if user_input.length == 1 && list_dict.has_key?(user_input)
+		output = list_dict[user_input]
+	elsif list_dict.has_value?(user_input)
 		output = user_input
 	else
 		else_text
@@ -464,38 +376,10 @@ def list(hash, selector, heading_text, question_text, else_text)
 	output.to_sym
 end
 	
-def room_oper_list
-	def_check("room_oper_list")
-	unit_list = $units.select{|k,v| v.operative && v.room == true}
-	unit_list_dict = dictionary(unit_list)
-	
-	line
-	puts ""
-	puts "    ==== R O O M S ===="
-	puts ""
-	unit_list.each_value{|v| puts "  :+: #{v.name}"}
-	puts ""
-	puts ">> What unit?"
-	print ">> "
-	user_input= gets.chomp.downcase
-	main if user_input == "q"
-	if user_input.length == 1 && unit_list_dict.has_key?(user_input)
-		output = unit_list_dict[user_input]
-	elsif unit_list_dict.has_value?(user_input)
-		output = user_input
-	else
-		puts ">> No unit was choosen."
-		puts output
-		main
-	end
-	
-	output.to_sym
-end
-
 def robot_to_storage
 	def_check("robot_to storage")
-	robot = robot_oper_list
-	unit = room_oper_list
+	robot = list($robots, "between", 1, 4, "AVAILABLE ROBOTS", ">> Which Robot would you like to Send?", ">> No Robot was selected.", nil)
+	unit = list($units, "room", nil, nil, "AVAILABLE ROOMS", ">> Which Room would you like to choose?", ">> No Room was selected.", nil) 
 	if $units[unit].room == true && $units[unit].level == 1 && $robots[robot].level < 4
 		puts ""
 		puts ">> #{$robots[robot].name} is not in a level to help Upgrade in the Workshop."
@@ -510,47 +394,48 @@ end
 
 def robot_status
 	def_check("robot_status")
-	robot = full_list($robots, "Full List Robots", "Which robot would you like to choose?", "No robot was selected.")
-	#robot = robot_oper_list
+	robot = list($robots, "full", nil, nil, "Full List Robots", "Which robot would you like to choose?", "No robot was selected.", nil)
 	$robots[robot].report
 end
 
 def unit_status
 	def_check("unit_status")
-	unit = full_list($units, "Full List Units", "Which unit would you choose?", "No unit was selected.")
+	unit = list($units, "full", nil, nil, "Full List Units", "Which unit would you choose?", "No unit was selected.", nil)
 	$units[unit].report
 end
 
-def fix_status
-	def_check("fix_status")
-	puts ""
-	puts "       FIX     "
-	puts "   ---UNITS--- "
-	$units.each_value {|v| puts "#{v.name} is broken." if v.operative == false && v.maned == false}
-	$units.each_value {|v| puts "#{v.name} is broken. #{v.robot} will fix it in the next hour." if v.operative == false && v.maned == true}
-	puts ""
-	puts "  ---ROBOTS----"
-	$robots.each_value {|v| puts "#{v.name} is broken." if v.operative == false }#&& v.maned == false}
-	$robots.each_value {|v| puts "#{v.name} is broken. #{v.robot} will it!" if v.operative == false && v.maned == true}
-	puts ""
+def is_string(string)
+	def_check("string")
+	string.is_a? String	
 end
-	
+
 def view
 	def_check("view")
 	if $viewer.operative && $viewer.maned
-		if $viewer.level >= 1 then puts "Next hour event code: #{$event_order[0].code}" end
-		if $viewer.level >= 2 then puts "In 2 hours event code: #{$event_order[1].code}" end
-		if $viewer.level == 3 then puts "In 3 hours event code: #{$event_order[2].code}" end
+		print "Next hour event code:  "
+		if $viewer.level >= 1 && is_string($event_order[0]) then puts $nothing.code else puts $event_order[0].code end
+		print "In 2 hours event code: "
+		if $viewer.level >= 2 && is_string($event_order[1]) then puts $nothing.code else puts $event_order[1].code end
+		print "In 3 hours event code: "
+		if $viewer.level == 3 && is_string($event_order[2]) then puts $nothing.code else puts $event_order[2].code end
 	elsif puts "No one is in #{$viewer.name}."
 	end
 end
 
 def view_code
-	def_check("view")
+	def_check("view_code")
 	$events.each_value {|v| puts "?? #{v.code} - #{v.name}"}
 end
 	
 #------SHIP-MACHANIZM------
+
+def party
+	if $story_counter.amount == 5
+		party_invitation
+	else
+		puts ">> What Party?"
+	end
+end
 
 def status
 	def_check("status")
@@ -578,6 +463,11 @@ def state_limit(state)
 	state.amount = 0 if state.amount < 0
 end
 
+def state_report
+	puts "\t --== ALL STATE REPORT ==--"
+	puts ""
+	$state.each_value {|v| puts "?? #{v.name}: #{v.amount}...#{v.limit}(MAX)"}
+end
 
 #--------NEXT-TURN---------
 
@@ -585,6 +475,7 @@ def next_turn
 	def_check("next")
 	puts ""
 	
+	$good_event = find($balloon)
 	event_happened
 
 	# BASE
@@ -608,12 +499,14 @@ def next_turn
 	if $power.amount > 0
 		$rescue_time.amount -= 1 if $gps.operative && $beacon.operative && $beacon.maned
 		
+		# AIR		
 		if $aircon.operative && $aircon.maned
 			if $aircon.level == 1 then $air.amount += 12 and $power.amount -= 5 end
 			if $aircon.level == 2 then $power.amount += 16 end
 			if $aircon.level == 3 then $air.amount += 20 and $power.amount -= 7 end
 		end
-
+		
+		# SHIELD
 		$power.amount -= 5 if $shieldgen.level == 2
 		$shield.amount += 5 and $power.amount -= 5 if $shieldgen.level == 3
 		$shield.amount += 3 and $power.amount -= 5 if $shieldgen.operative && $shieldgen.maned
@@ -665,7 +558,7 @@ def next_turn
 			# ROBOT UPGRADE
 			$robots.each_value {|v| v.upgrade and $power.amount -= 20 if v.operative && v.maned}
 			
-				# FIX
+			# FIX
 			$robots.each_value {|v| v.fix and $power.amount -= 10 if v.operative == false && v.maned}
 			$units.each_value {|v| v.fix and $power.amount -= 10 if v.operative == false && v.maned}
 			$gps.robot_out if $gps.operative == true
@@ -676,29 +569,52 @@ def next_turn
 	state_limit($air)
 	state_limit($shield)
 	state_limit($power)
-
+	
+	# PARTY STORY
+	
+	if $story_counter.amount == 4 && $hq.storage.include?($jack) && $hq.storage.include?($marvin) && $hq.storage.include?($dazh) && $hq.storage.include?($laneny) then story_party end
+	if $story_counter.amount == 3 && $workshop.robot == $jack then story_found end
+	if $story_counter.amount.between?(1,2) && $workshop.robot == $jack then $story_counter.amount += 1 end
+	if $story_counter.amount == 0 && $jack.level == 3 then story_check end
+	
 	end_game
 end
 
-
-
 #-----EVENTS- MACHANIZM-----
-
-
 
 def event_happened
 	def_check("event_happened")
 	event_current = $event_order.shift
+	if event_current == "balloon"
+		if $dazh.level == 3 && $viewer.robot == $dazh
+			event_current = $balloon
+		else
+			event_current = $nothing
+		end
+	elsif event_current == $nothing
+		event_current = $nothing
+	end	
+		
+	if event_current == "battery"
+		if $dazh.level == 3 && $viewer.robot == $dazh
+			event_current = $bat_found
+		else
+			event_current = $bat_loss
+		end
+	elsif event_current == $nothing
+		event_current = $nothing
+	end
+	
 	event_current.effect
-	puts ">> #{event_current.name} occurred."
+	puts "\t>> #{event_current.name} occurred. <<"
+	puts ""
 end
 
 #--------------- GAME !!!! --------------
 
-$robot_dict = dictionary($robots)
-$unit_dict = dictionary($units)	
-
-
+def main_game_screen
+	puts "you are here!!"
+end
 
 
 def main
@@ -722,45 +638,55 @@ def main
 			maintain
 		when "f", "fix"
 			fix
+#Robots
 		when "s", "send"
 			robot_to_storage
+		when "rf"
+			robot_fix
 		when "ru"
 			robot_upgrade
 		when "rr"
 			robot_reset
 		when "rs"
 			robot_status
+		when "ri"
+			robots_info
 		when "r?"
 			help_robot
-		when "us"
-			unit_status
+#Units
+		when "uf"
+			unit_fix
 		when "uu"
 			unit_upgrade
+		when "us"
+			unit_status
+		when "ui"
+			units_info
 		when "u?"
 			help_unit
 		when "v"
 			view
 		when "v?"
 			view_code		
+		when "p?", "party?"
+			party
+#Teasters
 		when "slu"
 			state_limit_update
 		when "dc"
 			$check = !$check
+		when "sr"
+			state_report
 		when "t1"	
 			$air.amount += 30
 			$shield.amount += 30
 			$power.amount += 60		
 		when "t2"
-			puts $events[:air_loss].report
-			puts $events[:meteor].report
-			puts $events[:battery_fail].report
+			v = 5 #"yes"
+			if v.is_a? String then puts "String!!" end
+			if v.is_a? Integer then puts "Integer!!" end
 		when "t3"
 			puts $event_order[0].name
-		when "t4"
-			$jack.level += 1
-		when "tl"
-			test = list($robots, operative, "Those are the ROOBTS", "Which robot would you like to hug?", "It didn't work")
-			puts "this: #{test}"
 		else
 			puts ">> Try to Type again."
 		end
