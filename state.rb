@@ -8,6 +8,7 @@ class State
 	end
 	
 	def update(new_limit)
+			def_check("update")
 		@limit = new_limit
 	end
 		

@@ -12,6 +12,7 @@ class Robot
 	end
 
 	def report
+		def_check("report")
 		puts """
 		   --- ROBOT REPORT ---
 		
@@ -26,6 +27,7 @@ class Robot
 	end
 	
 	def change_unit(unit)
+		def_check("change_unit")
 		if unit.room == false
 			@unit.storage.delete(self)
 		end
@@ -34,47 +36,57 @@ class Robot
 		@unit = unit
 	end
 
-	def robot_work(robot)				
+	def robot_work(robot)
+		def_check("robot_work")
 		
 		if @robot.name == robot.name
-			puts ">> #{robot.name} is already in #{@name}."
+			puts "\t<< #{robot.name} is already in #{@name}. >>"
 		elsif @maned == false
 			@maned = true
 			@robot = robot
 			robot.change_unit(self)
-			puts ">> #{robot.name} moved to #{@name}."
+			puts "\t<< #{robot.name} working on #{@name}. >>"
 		elsif @maned == true 
 			@robot.unit = $units[:hq]
 			@robot = robot
 			robot.change_unit(self)
-			puts ">> #{robot.name} moved to hq."
+			puts "\t<< #{robot.name} moved to hq. >>"
 		else
 			puts "??? Something went wrong in >> def robot_work <<"
 		end
 	end
 	
 	def robot_out
+		def_check("robot_out")
 		@robot.unit = $units[:hq]
 		@robot = $robots[:empty]
 		@maned = false
 	end
 
 	def fix
-		@operative = true
-		robot_out
-		puts ">> #{@name} was fixed."
-		puts ""
+		def_check("fix")
+		if $power.amount >= $power_amount[:fix]
+			@operative = true
+			robot_out
+			$power.amount += $power_amount[:fix]
+			puts "\t<< #{@name} was fixed. >>"
+		else
+			puts "\t<< Not enough POWER to fix. >>"
+		end
 	end
 	
 	def upgrade
+		def_check("upgrade")
 		@level += 1
 		robot_out
-		puts "\t>> #{@name} is now level: #{@level}."
+		$power.amount += $power_amount[:upgrade]
+		puts "\t<< #{@name} is now level: #{@level}. >>"
 	end
 
 	def reset_upgrade
+		def_check("reset_upgrade")
 		@level = 1
-		puts ">> #{@name} was reset and it is now level: #{@level}" 
+		puts "\t<< #{@name} was reset and it is now level: #{@level} >>" 
 	end
 	
 	

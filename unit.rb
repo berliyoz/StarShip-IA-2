@@ -12,6 +12,7 @@ class Unit
 	end
 	
 	def report
+		def_check("report")
 		puts """
 		 --++ #{@name} ++--
 		  
@@ -33,6 +34,7 @@ class Unit
 	end
 
 	def breakdown
+		def_check("breakdown")
 		@operative = false if @operative == true
 		puts "#{@name} malfunction."
 		puts "#{@robot} will fix it in the next hour." if @maned == true
@@ -40,11 +42,14 @@ class Unit
 	end
 	
 	def fix
+		def_check("fix")
 		@operative = true
-		puts "#{@name} was fixed."
+		$power.amount += $power_amount[:fix]
+		puts "\t<< #{@name} was fixed. >>"
 	end
 
 	def robot_out
+		def_check("robot_out")
 		@robot.unit = $units[:hq]
 		robot_storage_out
 		@robot = $robots[:empty]
@@ -52,6 +57,7 @@ class Unit
 	end
 		
 	def robot_storage_in(robot)
+		def_check("robot_storage_in")
 		if robot.unit.storage.include?(robot) then robot.unit.storage.delete(robot) end 
 		@storage.push(robot)
 		robot.change_unit(self)
@@ -60,19 +66,20 @@ class Unit
 		puts ""
 	end	
 	
-	def robot_work(robot)				
+	def robot_work(robot)
+		def_check("robot_out")	
 		if @robot.name == robot.name
-			puts ">> #{robot.name} is already in #{@name}."
+			puts "\t<< #{robot.name} is already in #{@name}. >>"
 		elsif @maned == false
 			if robot.unit.storage.include?(robot) then robot.unit.storage.delete(robot) end
 			@maned = true
 			@robot = robot
 			robot.change_unit(self)
-			puts ">> #{robot.name} moved to #{@name}."
+			puts "\t<< #{robot.name} moved to #{@name}. >>"
 		elsif @maned == true 
-			puts ">> #{@robot.name} moved to #{$units[:hq].name}."
+			puts "\t<< #{@robot.name} moved to #{$units[:hq].name}.>>"
 			@robot.unit = $units[:hq]
-			puts ">> #{robot.name} moved to #{@name}."
+			puts "\t<< #{robot.name} moved to #{@name}.>>"
 			@robot = robot
 			robot.change_unit(self)
 			
@@ -82,15 +89,17 @@ class Unit
 	end
 
 	def robot_storage_out
+		def_check("robot_storage_out")
 		@storage.delete(@robot) if @storage.include?(@robot)
 
 	end
 	
 	def upgrade
+		def_check("upgrade")
 		@level += 1
 		robot_storage_out
 		robot_out
-		puts ">> #{@name} in now level: #{@level}."
+		puts "\t<< #{@name} is now level: #{@level}. >>"
 	end
 	
 end

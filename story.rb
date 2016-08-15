@@ -1,7 +1,22 @@
+def story_start
+	def_check("story_start")
+	puts """
+	>> A-48: Good news! Most of the more pleasant crew members are alive.
+	         Unfortunately The Ship is in a bad state....
+	         So let's try to keep it in one piece until the rescue team will arrive. """
+	STDIN.gets
+	puts """\t         I Think one of the Robots is working well enough to start fix this ship.
+	         Look in the ship manuels (?) for some explantions."""
+	STDIN.gets
+	puts "\t         Good Luck to us all. :)"
+	STDIN.gets
+	main
+end
+
 def story_check
 	def_check("stroy_check")
 	puts "\t>> Jack: I would like to check what happend to the ship."
-	puts "\t   Send me to maintain the Workshop, and I will do my best to find answers."
+	puts "\t   Send me to maintain the Workshop, and I will do my best to find answers. >>"
 	$story_counter.amount += 1
 end
 
@@ -76,7 +91,7 @@ def story_party
 				p    a        a  r    r     t        y    !!
 			"""
 			$story_counter.amount += 1
-			main#_game_screen
+			main_game_screen
 		when "n", "no"
 			puts "\t>> Jack: O.... Well.... I guess we can wait..."
 			STDIN.gets
@@ -88,7 +103,7 @@ def story_party
 			puts "\t            Write in (p?) or (party?)"
 			STDIN.gets
 			$story_counter.amount += 1
-			main#_game_screen
+			main
 		else
 			puts ">> Try to Type again."
 		end

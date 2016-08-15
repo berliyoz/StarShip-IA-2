@@ -4,35 +4,36 @@ require_relative "unit"
 require_relative "state"
 require_relative "story"
 
+$check = false
 def def_check(def_name)
 	puts "Def Check: #{def_name}." if $check == true
 end
 
-def find(good_event)
-	def_check("find")
-	if $viewer.robot == $dazh && $dazh.level == 3
-		return good_event
-	else 
-		$nothing
-	end
-end
+#def find(good_event)
+#	def_check("find")
+#	if $viewer.robot == $dazh && $dazh.level == 3
+#		return good_event
+#	else 
+#		$nothing
+#	end
+#end
 
 =begin
   -++ INFO ++--
 1. $units[:unit].room == true ===> can use storage
 
 =end
+$story_counter = State.new("Story Counter", 0, nil)
 
-#--------- PLAYERS -------------------
+def int_game
 
 #scanner
 $state = {
-air: State.new("Air", 130, 140),
-shield: State.new("Shield", 40, 120),
-power: State.new("Power", 200, 500),
+air: State.new("Air", 110, 140),
+shield: State.new("Shield", 60, 120),
+power: State.new("Power", 50, 500),
 rescue_time: State.new("Hours Until Rescue", rand(16..21), nil),
-total_time: State.new("Total Time", 0, nil),
-story_counter: State.new("Story Counter", 0, nil)
+total_time: State.new("Total Time", 0, nil)
 }
 
 $air = $state[:air]
@@ -40,12 +41,51 @@ $shield = $state[:shield]
 $power = $state[:power]
 $rescue_time = $state[:rescue_time]
 $total_time = $state[:total_time]
-$story_counter = $state[:story_counter]
+
+$air_amount = {
+base: -15,
+jack_l_2: 5,
+jack_l_3: 6,
+aircon_l_1_maned: 12,
+aircon_l_3_maned: 20,
+workshop_laneny: 3,
+workshop_robot: 1
+}
+
+$shield_amount = {
+base: -3,
+jack_l_2: 2,
+jack_l_3: 2,
+shieldgen_l_3: 5,
+shieldgen_maned: 3,
+workshop_laneny: 1,
+workshop_robot: 1,
+}
+
+$power_amount = {
+base: -15,
+level_1: 10,
+level_2: 13,
+level_3: 17,
+level_4: 20,
+maned: 12,
+marvin_2: 6,
+marvin_3: 10,
+aircon_l_1: -5,
+aircon_l_2: -6,
+aircon_l_3: -7,
+shieldgen: -2,
+shield_maned: -5, 
+workshop_laneny: 2,
+workshop_robot: 1,
+upgrade: -30,
+fix: -10
+}
 
 $robots = {
 empty: Robot.new("Empty",true, 0),
-jack: Robot.new("Jack", true),
-dazh: Robot.new("Dazh", true),
+jack: Robot.new("Jack", true,),
+dazh: Robot.new("Dazh"),
 marvin: Robot.new("Marvin"),
 laneny: Robot.new("Laneney")
 }
@@ -59,10 +99,10 @@ $laneny = $robots[:laneny]
 $units = {
 aircon: Unit.new("AirCon", true),
 shieldgen: Unit.new("ShieldGen", true),
-gps: Unit.new("GPS", true),
-beacon: Unit.new("Beacon", true),
-viewer: Unit.new("Viewer", true, 3),
-engine: Unit.new("Engine", true),
+gps: Unit.new("GPS"),
+beacon: Unit.new("Beacon"),
+viewer: Unit.new("Viewer"),
+engine: Unit.new("Engine"),
 hq: Unit.new("HQ", true, 10, true),
 workshop: Unit.new("Workshop", true, 1, true)
 }
@@ -77,13 +117,13 @@ $hq = $units[:hq]
 $workshop = $units[:workshop]
 
 $events = {
-nothing: Event.new("Nothing", 0),
-air_loss: Event.new("Air Loss", 1, rand(-50..-30), 0),
-meteor: Event.new("Meteor", 2, 0, rand(-20..-10)),
-battery_fail: Event.new("Battery Fail", 3, 0, 0, rand(-60..-40)),
-miracle: Event.new("Miracle!!!", 4, 40, 20, 60),
-air_balloon: Event.new("Air Balloon", 5, 20),
-battery_found: Event.new("Good Battery Magic", 6, 0, 0, rand(30..40))
+nothing: Event.new("Nothing", 0, 0, 0, 0, 0, ">> Dazh: We can expect a quiet hour."),
+air_loss: Event.new("Air Loss", 1, rand(-50..-30), 0, 0, 0, ">> Dazh: I see some air wooshing out from the right. We should perpare for an air loss."),
+meteor: Event.new("Meteor", 2, 0, rand(-20..-10), 0, 0, ">> Dazh: We should brace ourself, a meteor is on his way to meet us."),
+battery_fail: Event.new("Battery Fail", 3, 0, 0, rand(-60..-40), 0, ">> Dazh: One of the batteries doesn't look well to me."),
+miracle: Event.new("Miracle!!!", 4, 40, 20, 60, 0, ">> Dazh: I have good feelig about the next hour."),
+air_balloon: Event.new("Air Balloon", 5, 20, 0, 0, 0, ">> Dazh: I can see an Air Balloon floating our way. Hopefully I can catch it."),
+battery_found: Event.new("Good Battery Magic", 6, 0, -5, rand(30..40), 0, ">> Dazh: A half working stalite is going to bump us. I might be able to get some Power from it.")
 }
 
 $nothing = $events[:nothing]
@@ -94,65 +134,55 @@ $miracle = $events[:miracle]
 $balloon = $events[:air_balloon]
 $bat_found = $events[:battery_found]
 
+$event_order = []
 
-
-
-$event_order = [
-"balloon",
-#"balloon",
-#"balloon",
-#"battery",
-#"battery",
-#"battery",
-#$nothing,
-#$nothing,
-#$nothing,
-$air_loss,
-$nothing,
-$nothing,
-$nothing,
-$nothing,
-$air_loss,
-$meteor,
-$bat_loss,
-$nothing,
-$air_loss,
-$bat_loss,
-$miracle,
-$nothing,
-$nothing,
-
-]
+def events_array
+	def_check("events_array")
+	event_list_chance = []
+	4.times {$event_order.push($nothing)}
+	
+	10.times {event_list_chance.push($nothing)}
+	5.times {event_list_chance.push($air_loss)}
+	4.times {event_list_chance.push($meteor)}
+	5.times {event_list_chance.push($bat_loss)}
+	2.times {event_list_chance.push($miracle)}
+	2.times {event_list_chance.push($balloon)}
+	2.times {event_list_chance.push($bat_found)}
+	
+	200.times {$event_order.push(event_list_chance[rand(0...event_list_chance.length)])}
+end
 
 $robots.each_value{|v| $hq.storage.push(v) if v.level >= 1}
 $robots.each_value{|v| v.robot = $empty}
 $robots.each_value{|v| v.unit = $hq}
 $units.each_value{|v| v.robot = $empty}
 
-#-------GAME-MACHANIZM------
+events_array
 
-$check = false
-
+end
 
 def help
 	def_check("help")
 	puts """
+	    ..:: HELP ::..
+	
 	q  - quit \\ Main
+	c  - credits
+	t? - program checking tools
+	
 	m  - maintain unit or robot
 	s  - send to room (Workshop or HQ)
 	n  - next turn
-	v  - user viewer
-	v? - code list for the viewer
-	rs - robot status
-	ru - robot upgrade
+
 	r? - robot help
-	rr - robot reset upgrades
-	us - unit status
-	uu - unit upgrade
+	rf - robot fix
+	ru - robot upgrade
+	
 	u? - unit help
-	t  - test
-	t2 - test2
+	ui - unit info
+	uf - unit fix
 	"""
+	if $story_counter.amount == 5 then puts "\tp?  - party_invitation" and puts "" end
 end
 
 def help_robot
@@ -161,67 +191,101 @@ def help_robot
 		..:: ROBOTS ABILITY LIST ::..
 	
 	>> Can maintian (m) Units and Robots.
-	>> Can fix (f) Units and Robots.
+	>> Can fix Units (uf) and Robots (rf).
 	>> Can Upgrade other Robots (ru).
 	"""
-	puts "\t>> Jack:"
+	puts "\t>> Jack:   (Level: #{$jack.level}, in Unit: #{$jack.unit.name})"
 	puts "\t   Nothing special yet." if $jack.level == 1
-	puts "\t   Adds +5 AIR and +2 SHIELD." if $jack.level == 2
-	puts "\t   Adds +10 AIR and +4 SHIELD." if $jack.level >= 3
+	puts "\t   Adds #{$air_amount[:jack_l_2]} AIR and #{$shield_amount[:jack_l_2]} SHIELD." if $jack.level == 2
+	puts "\t   Adds #{$air_amount[:jack_l_2] + $air_amount[:jack_l_3]} AIR and #{$shield_amount[:jack_l_2] + $shield_amount[:jack_l_3]} SHIELD." if $jack.level >= 3
 	puts "\t   Can Help (s) Laneny in the Workshop to Upgrade the AirCon." if $jack.level == 4
 	puts ""
-	puts "\t>> Dazh:"
+	puts "\t>> Dazh:   (Level: #{$dazh.level}, in Unit: #{$dazh.unit.name})"
 	puts "\t   Nothing special yet." if $dazh.level == 1
 	puts "\t   Hints what would be the next event." if $dazh.level >= 2
 	puts "\t   Will keep an open eye for cool stuff while maintining (m) the Viewer." if $dazh.level >= 3
 	puts "\t   Can Help (s) Laneny in the Workshop to Upgrade the Viewer." if $dazh.level == 4
 	puts ""
-	puts "\t>> Marvin:"
+	puts "\t>> Marvin: (Level: #{$marvin.level}, in Unit: #{$marvin.unit.name})"
 	puts "\t   Nothing special yet." if $marvin.level == 1
-	puts "\t   Adds +5 POWER while Maintaining the Engine." if $marvin.level == 2
-	puts "\t   Adds +10 POWER while Maintaining the Engine." if $marvin.level >= 3
+	puts "\t   Adds #{$power_amount[:marvin_2]} POWER while Maintaining the Engine." if $marvin.level == 2
+	puts "\t   Adds #{$power_amount[:marvin_2]} POWER while Maintaining the Engine." if $marvin.level >= 3
 	puts "\t   Can Help (s) Laneny in the Workshop to Upgrade the Engine." if $marvin.level == 4
 	puts ""
-	puts "\t>> Laneny:"
-	puts "\t   When maintaining (m) the Workshop +3 AIR, +1 SHIELD and +2 POWER."
+	puts "\t>> Laneny: (LevelL #{$laneny.level}, in  Unit: #{$laneny.unit.name})"
+	puts "\t   When maintaining (m) the Workshop Adds: #{$air_amount[:workshop_laneny]} AIR, #{$shield_amount[:workshop_laneny]} SHIELD and #{$power_amount[:workshop_laneny]} POWER."
 	puts "\t   When level 4 robots join (s) they help upgrade the ship's units."
 	puts ""
 end
 
 def help_unit
 	def_check("help_unit")
-	puts "\t		..:: UNITS ABILITY LIST ::.."
+	puts "\t\t\t..:: UNITS ABILITY LIST ::.."
 	puts ""	
-	puts "\t>> the AirCon losses 15 AIR every hour" if $aircon.level == 1
-	puts "\t>> the AirCon is Balanced" if $aircon.level == 2
-	puts "\t>> the AirCon gain 10 AIR every hour" if $aircon.level == 3
+	puts "\t>> Humens:    Losses #{$air_amount[:base] * -1} AIR every hour" if $aircon.level == 1
+	puts "\t>> ShieldGen: Losses #{$shield_amount[:base] * -1} SHIELD every hour" if $shieldgen.level == 1
+	puts "\t>> Engine:    Uses #{$power_amount[:base] * -1} POWER every hour"
 	puts ""
-	puts "\t>> the ShieldGen losses 3 AIR every hour" if $shieldgen.level == 1
-	puts "\t>> the ShieldGen is Balanced" if $shieldgen.level == 2
-	puts "\t>> the ShieldGen gain 5 AIR every hour" if $shieldgen.level == 3	
+	puts "\t\t\t     ..:: IF MANED ::.."
 	puts ""
-	puts "\t>> the Engine losses 15 POWER every hour" if $engine.level == 1
-	puts "\t>> the Engine losses 10 POWER every hour" if $engine.level == 2
-	puts "\t>> the Engine losses 5 POWER every hour" if $engine.level == 3
-	puts "\t>> the Engine losses 2 POWER every hour" if $engine.level == 4
-	puts ""	
-	puts "\t>> the Viewer Shows (v) the code of the next event, if Maintained." if $viewer.level == 1
-	puts "\t>> the Viewer Shows (v) the code of the next 2 events, if Maintained." if $viewer.level == 2
-	puts "\t>> the Viewer Shows (v) the code of the next 3 events, if Maintained." if $viewer.level == 3
-	puts "\t   If Dazh is upgraded to level 2, and Maintaining the Viewer, he will give a heads up."
-	puts """
-	
-	>> GPS is needed to operate the Beacon.
-	
-	>> Beacon is needed to help the rescue team locate the StarShip.
-	
+	puts "\t>> AirCon:    Gain #{$air_amount[:aircon_l_1_maned]} AIR every hour" if $aircon.level == 1
+	puts "\t>> AirCon:    Balanced" if $aircon.level == 2
+	puts "\t>> AirCon:    Gain #{$air_amount[:aircon_l_3_maned]} AIR every hour" if $aircon.level == 3
+	puts "\t>> ShieldGen: Gain #{$shield_amount[:shieldgen_maned]} SHIELD every hour" if $shieldgen.level == 1
+	puts "\t>> ShieldGen: Balanced" if $shieldgen.level == 2
+	puts "\t>> ShieldGen: Gain #{$shield_amount[:shieldgen_l_3]} SHIELD every hour" if $shieldgen.level == 3	
+	puts "\t>> Engine:    Generate #{$power_amount[:level_1]} POWER every hour" if $engine.level == 1
+	puts "\t>> Engine:    Generate #{$power_amount[:level_2]} POWER every hour" if $engine.level == 2
+	puts "\t>> Engine:    Generate #{$power_amount[:level_3]} POWER every hour" if $engine.level == 3
+	puts "\t>> Engine:    Generate #{$power_amount[:level_4]} POWER every hour" if $engine.level == 4
+	puts "\t>> Viewer:    If Dazh is upgraded to level 2, and Maintaining the Viewer, he will give a heads up."
+puts """
+	>> Beacon is needed to help the rescue team locate the StarShip. (GPS is needed to operate the Beacon.)
 	>> HQ - Where robots go to rest
-	
 	>> Workshop - The place to Upgrade the ship's units.
-	   :+: When Laneny is Maintaining (m) the Workshop he adds +3 AIR, +1 SHIELD, +2 POWER
-	       Any other robot that Maintain (m) the Workshop adds +1 AIR, +1 SHIELD, +2 POWER 
+	   :+: When Laneny is Maintaining (m) the Workshop he adds #{$air_amount[:workshop_laneny]} AIR, #{$shield_amount[:workshop_laneny]} SHIELD and #{$power_amount[:workshop_laneny]} POWER.
+	       Any other robot that Maintain (m) the Workshop adds #{$air_amount[:workshop_robot]} AIR, #{$shield_amount[:workshop_robot]} SHIELD and #{$power_amount[:workshop_robot]} POWER.
 	   :+: When Laneny is Maintaining (m) the Workshop
 	       he can be assist (s) by level 4 robots to upgrade the ship's units."""		
+end
+
+def help_program
+	def_check("help_program")
+	puts """
+	   ..:: PROGRAM TESTING TOOLS ::..
+	   
+	dc  - def check (turn on \ off)
+
+	ri - robot info
+	rs  - robot status
+	rr  - robot reset upgrades
+
+	us  - unit status
+
+	sr  - state report
+	slu - set new state limit
+	sb  - state boost
+
+	t   - test
+	t2  - test 2
+	t3  - test 3
+	"""
+end
+
+def credits
+	def_check("credits")
+	puts """
+		..:: CREDITS ::..
+		
+	Programmer:  Barak Ben Dov
+	Cool Lady:   L.E.T Mino	
+	Master Grip: Simha Talalayevsky
+	Guru:        Nadav Ben Dov
+
+	
+	
+	
+	  Summer of 2016"""
 end
 
 def prompt
@@ -242,12 +306,44 @@ end
 def end_game
 	def_check("end_game")
 	if $air.amount <= 0 || $shield.amount <= 0
-		puts ">> The Game has ENDED! You Have DIED! No worries!"
-		puts ""
+		puts """
+		
+		
+                        ..................          .........          .....
+                    ................................................................
+                  .....................................................................
+                ....... The Game had ENDED! You DIED! No worries! .......................
+            .....................................................................................
+                  ..................              ................          .........
+				 
+				 
+
+
+				 
+				 
+		 
+		
+		"""
 		exit(0)
 	elsif $rescue_time.amount == 1
-		puts ">> The Game had ENDED! You Have SAVED THE DAY! No worries!"
-		puts ""
+		puts """
+		
+		
+                       ..................          .........          .....
+                   ...............................................................
+                .....................................................................
+              ....... The Game had ENDED! You Have SAVED THE DAY! No worries! ............
+          .....................................................................................
+                 ..................              ................          .........
+				 
+				 
+
+
+				 
+				 
+		* now go have some fun in the party.
+		
+		"""
 		exit(0)
 	end		
 end
@@ -257,14 +353,6 @@ def dictionary(hash)
 	dict = {}
 	hash.each_key {|k| dict[k.to_s[0]] = k.to_s}
 	dict
-end
-
-def robot_upgrade
-	def_check("robot_upgrade")
-	upgrading_robot = list($robots, "between", 1, 4, "AVAILABLE ROBOT", ">> Which Robot would you like to assign for the job?", ">> No Robot was selected.", nil)
-	upgraded_robot = list($robots, "between", 1, 3, "ROBOTS UPGRADE", ">> Which Robot would you like to  upgrade?", ">> No Robots was selected.", ">> All Robots are at MAX level.")
-	if upgraded_robot == upgrading_robot then puts "\t>> A robot cannot Upgrade itsef."; main end
-	$robots[upgraded_robot].robot_work($robots[upgrading_robot])
 end
 
 def state_limit_update
@@ -285,25 +373,39 @@ def robot_reset
 	$robots[robot].reset_upgrade
 end
 
+def robot_to_work
+	def_check("robot_to_work")
+	robot = list($robots, "between", 1, 4, "AVAILABLE ROBOTS", ">> Which Robot would you like to assign for the job?", "No Robot was selected.", ">> All Robots are Broken.")
+	return robot
+end
+
+def robot_upgrade
+	def_check("robot_upgrade")
+	worker = robot_to_work
+	work = list($robots, "between", 1, 3, "ROBOTS UPGRADE", ">> Which Robot would you like to  upgrade?", ">> No Robots was selected.", ">> All Robots are at MAX level.")
+	if work == worker then puts "\t<< A robot cannot Upgrade itsef. >>"; main end
+	$robots[work].robot_work($robots[worker])
+end
+
 def robot_fix
 	def_check("robot_fix")
-	fixing = list($robots, "between", 1, 4, "AVAILABLE ROBOTS", ">> Which Robot would you like to assign for the job?", "No Robot was selected.", ">> All Robots are Broken.")
-	fixed = list($robots, "oper_false", nil, nil, "ROBOTS for FIXING", ">> Which Robot would you like to Fix?", ">> No Robot was selected.", ">> All Robots are Operational.")
-	$robots[fixed].robot_work($robots[fixing])
+	worker = robot_to_work
+	work = list($robots, "oper_false", nil, nil, "BROKEN ROBOTS", ">> Which Robot would you like to Fix?", ">> No Robot was selected.", ">> All Robots are Operational.")
+	$robots[work].robot_work($robots[worker])
 end
 
 def unit_fix
 	def_check("unit_fix")
-	fixing = list($robots, "between", 1, 4, "AVAILABLE ROBOTS", ">> Which Robot would you like to assign for the job?", ">> No Robot was selected.", "All Robots are Broken.")
-	fixed = list($units, "oper_false", nil, nil , "UNITS for FIXING", ">> Which Unit would you like to Fix?", ">> No Unit was selescted.", ">> ALL Units are Operational.")
-	$units[fixed].robot_work($robots[fixing])
+	worker = robot_to_work
+	work = list($units, "oper_false", nil, nil , "BROKEN UNITS", ">> Which Unit would you like to Fix?", ">> No Unit was selescted.", ">> ALL Units are Operational.")
+	$units[work].robot_work($robots[worker])
 end
 
 def maintain
 	def_check("maintain")
-	robot = list($robots, "between", 1, 4, "AVAILABLE ROBOTS", ">> Which Robot would you like to assign for the job?", ">> No Robot was selected.", nil)
-	destination = list($units, "between", 1, 4, "OPERATIONAL UNITS", ">> Which Unit would you like to Maintain?", ">> No unit was selected.", ">> All Units are Broken.")
-	$units[destination].robot_work($robots[robot])
+	worker = robot_to_work
+	work = list($units, "between", 1, 4, "OPERATIONAL UNITS", ">> Which Unit would you like to Maintain?", ">> No unit was selected.", ">> All Units are Broken.")
+	$units[work].robot_work($robots[worker])
 end
 
 def robots_info
@@ -311,7 +413,7 @@ def robots_info
 	list = $robots.select{|k,v| v.level >= 1}
 	puts "\t..:: ROBOT INFO LIST ::.."
 	puts ""
-	list.each_value{|v| puts "??? #{v.name}, Level: #{v.level}, Unit: #{v.unit.name	}."}
+	list.each_value{|v| puts "\t- (Level: #{v.level}) #{v.name} in Unit: #{v.unit.name}."}
 end
 
 def units_info
@@ -404,58 +506,32 @@ def unit_status
 	$units[unit].report
 end
 
-def is_string(string)
-	def_check("string")
-	string.is_a? String	
-end
-
-def view
-	def_check("view")
-	if $viewer.operative && $viewer.maned
-		print "Next hour event code:  "
-		if $viewer.level >= 1 && is_string($event_order[0]) then puts $nothing.code else puts $event_order[0].code end
-		print "In 2 hours event code: "
-		if $viewer.level >= 2 && is_string($event_order[1]) then puts $nothing.code else puts $event_order[1].code end
-		print "In 3 hours event code: "
-		if $viewer.level == 3 && is_string($event_order[2]) then puts $nothing.code else puts $event_order[2].code end
-	elsif puts "No one is in #{$viewer.name}."
-	end
-end
-
-def view_code
-	def_check("view_code")
-	$events.each_value {|v| puts "?? #{v.code} - #{v.name}"}
-end
-	
 #------SHIP-MACHANIZM------
 
 def party
 	if $story_counter.amount == 5
 		party_invitation
 	else
-		puts ">> What Party?"
+		puts "\t>> What Party?"
 	end
 end
 
 def status
 	def_check("status")
-	puts ""
-	puts "      	==== M A I N ===="
+	puts " ? - help       ==== M A I N ===="
 	puts ""
 	print "	+ #{$air.name}:__________________#{$air.amount}"; print " MAX" if $air.amount == $air.limit; puts ""
-	print "	+ #{$shield.name}:_______________#{$shield.amount}"; print "  MAX" if $shield.amount == $shield.limit; puts ""
+	print "	+ #{$shield.name}:_______________#{$shield.amount}"; print " MAX" if $shield.amount == $shield.limit; puts ""
 	print "	+ #{$power.name}:________________#{$power.amount}"; print " MAX" if $power.amount == $power.limit; puts ""
-	puts "	+ #{$rescue_time.name}:___#{$rescue_time.amount}"
+	if $beacon.operative && $gps.operative then puts "	+ #{$rescue_time.name}:___#{$rescue_time.amount}" end
 	puts "	+ #{$total_time.name}:___________#{$total_time.amount}"
 	puts ""
-	if $viewer.robot == $dazh && $dazh.level >= 2
-		if $event_order[0] == $events[:nothing] then puts ">> Dazh: We can expect a quiet hour." end
-		if $event_order[0] == $events[:air_loss] then puts ">> Dazh: I see some air wooshing out from the right. We should perpare for an air loss." end
-		if $event_order[0] == $events[:meteor] then puts ">> Dazh: We should brace ourself, a meteor is on his way to meet us." end
-		if $event_order[0] == $events[:battery_fail] then puts ">> Dazh: One of the batteries doesn't look well to me." end
-		if $event_order[0] == $events[:miracle] then puts ">> Dazh: I have good feelig about the next hour." end
-	end
+	robots_info
+	
+	
+	if $viewer.robot == $dazh && $dazh.level > 1 then puts $event_order[0].dazh_message end
 end
+
 
 def state_limit(state)
 	def_check("state_limit")
@@ -475,60 +551,61 @@ def next_turn
 	def_check("next")
 	puts ""
 	
-	$good_event = find($balloon)
+	#$good_event = find($balloon)
 	event_happened
 
 	# BASE
-	$air.amount -= 15 and $power.amount -= 10 if $aircon.level == 1
-	$shield.amount -= 3 and $power.amount -= 5 if $shieldgen.level == 1
+	$air.amount += $air_amount[:base]
+	$shield.amount += $shield_amount[:base]
+	$power.amount += $power_amount[:base]
 	$total_time.amount += 1
 	
 	# UPGRADEED ROBOTS EFFECT
-	$air.amount += 5 and $shield.amount += 2 if $jack.level >= 2
-	$air.amount += 5 and $shield.amount += 2 if $jack.level >= 3
+	$air.amount += $air_amount[:jack_l_2] and $shield.amount += $shield_amount[:jack_l_2] if $jack.level >= 2
+	$air.amount += $air_amount[:jack_l_3] and $shield.amount += $shield_amount[:jack_l_3] if $jack.level >= 3
 	
 	# POWER
-	$power.amount += 10 if $engine.level == 1	
-	$power.amount += 13 if $engine.level == 2
-	$power.amount += 17 if $engine.level == 3
-	$power.amount += 20 if $engine.level == 4
-	$power.amount += 12 if $engine.maned
-	$power.amount += 5 if $engine.operative && $engine.robot == $marvin && $marvin.level >= 2
-	$power.amount += 10 if $engine.operative && $engine.robot == $marvin && $marvin.level >= 3
+	$power.amount += $power_amount[:level_1] if $engine.level == 1	
+	$power.amount += $power_amount[:level_2] if $engine.level == 2
+	$power.amount += $power_amount[:level_3] if $engine.level == 3
+	$power.amount += $power_amount[:level_4] if $engine.level == 4
+	$power.amount += $power_amount[:maned] if $engine.maned
+	$power.amount += $power_amount[:marvin_2] if $engine.operative && $engine.robot == $marvin && $marvin.level >= 2
+	$power.amount += $power_amount[:marvin_3] if $engine.operative && $engine.robot == $marvin && $marvin.level >= 3
 	
 	if $power.amount > 0
-		$rescue_time.amount -= 1 if $gps.operative && $beacon.operative && $beacon.maned
+		if $gps.operative && $beacon.operative && $beacon.maned then $rescue_time.amount -= 1 end
 		
 		# AIR		
 		if $aircon.operative && $aircon.maned
-			if $aircon.level == 1 then $air.amount += 12 and $power.amount -= 5 end
-			if $aircon.level == 2 then $power.amount += 16 end
-			if $aircon.level == 3 then $air.amount += 20 and $power.amount -= 7 end
+			if $aircon.level == 1 then $power.amount += $power_amount[:aircon_l_1] and $air.amount += $air_amount[:aircon_l_1_maned] end
+			if $aircon.level == 2 then $power.amount += $power_amount[:aircon_l_2] end
+			if $aircon.level == 3 then $power.amount += $power_amount[:aircon_l_3] and $air.amount += $air_amount[:aircon_l_3_maned] end
 		end
 		
 		# SHIELD
-		$power.amount -= 5 if $shieldgen.level == 2
-		$shield.amount += 5 and $power.amount -= 5 if $shieldgen.level == 3
-		$shield.amount += 3 and $power.amount -= 5 if $shieldgen.operative && $shieldgen.maned
+		if $shieldgen.level >= 2 then $power.amount += $power_amount[:shieldgen] and $shield.amount += $shield_amount[:base] * -1 end
+		if $shieldgen.level == 3 then $shield.amount += $shield_amount[:shieldgen_l_3] end
+		if $shieldgen.operative && $shieldgen.maned then $power.amount += $power_amount[:shieldgen] and $shield.amount += $shield_amount[:shieldgen_maned] end
 		
 		# UPGRADING in WORKSHOP
 		if $workshop.robot == $laneny
 			# Laneny works alone
-			if $workshop.storage == [] then $air.amount += 3 and $shield.amount += 1 and $power.amount += 2 end
+			if $workshop.storage == [] then $air.amount += $air_amount[:workshop_laneny] and $shield.amount += $shield_amount[:workshop_laneny] and $power.amount += $power_amount[:workshop_laneny] end
 			
 			if $workshop.storage.include?($jack)	
 				
 				# aircon + Jack
 				if !$workshop.storage.include?($marvin) && $aircon.level < 3 
 					$aircon.level += 1
-					$power.amount -= 30
+					$power.amount += $power_amount[:upgrade]
 					if $aircon.level < 3 then puts ">> #{$aircon.name} was upgraded to level: #{$aircon.level}" end
 					if $aircon.level == 3 then puts ">> #{$aircon.name} is in MAX level." end
 				
 				# shieldgen + Jack + Marvin
 				elsif $workshop.storage.include?($marvin) && $shieldgen.level < 3
 					$shieldgen.level += 1
-					$power.amount -= 30
+					$power.amount += $power_amount[:upgrade]
 					if $shieldgen.level < 3 then puts ">> #{$shieldgen.name} was upgraded to level: #{$shieldgen.level}" end
 					if $shieldgen.level == 3 then puts ">> #{$shieldgen.name} is in MAX level." end
 				end	
@@ -536,34 +613,34 @@ def next_turn
 			# engine + Marvin
 			elsif $workshop.storage.include?($marvin) && $engine.level < 4
 				$engine.level += 1
-				$power.amount -= 30
+				$power.amount += $power_amount[:upgrade]
 				if $engine.level < 4 then puts ">> #{$engine.name} upgraded to level #{$engine.level}." end
 				if $engine.level == 4 then puts ">> #{$engine.name} upgrade is MAXED." end
 			
 			# viewer + Dazh
 			elsif $workshop.storage.include?($dazh) && $viewer.level < 3
 				$viewer.level += 1
-				$power.amount -= 30
+				$power.amount += $power_amount[:upgrade]
 				if $viewer.level < 3 then puts ">> #{$viewer.name} upgraded to level #{$viewer.level}." end
 				if $viewer.level == 3 then puts ">> #{$viewer.name} upgrade is MAX." end
 			
 			end
 			
 		elsif $workshop.maned && $workshop.robot != $laneny
-			$air.amount += 1
-			$shield.amount += 1
-			$power.amount += 1
+			$air.amount += $air_amount[:workshop_robot]
+			$shield.amount += $shield_amount[:workshop_robot]
+			$power.amount += $power_amount[:workshop_robot]
 		end
 		
 			# ROBOT UPGRADE
-			$robots.each_value {|v| v.upgrade and $power.amount -= 20 if v.operative && v.maned}
+			$robots.each_value {|v| if v.operative && v.maned then v.upgrade end}
 			
 			# FIX
-			$robots.each_value {|v| v.fix and $power.amount -= 10 if v.operative == false && v.maned}
-			$units.each_value {|v| v.fix and $power.amount -= 10 if v.operative == false && v.maned}
+			$robots.each_value {|v| if v.operative == false && v.maned then v.fix end}
+			$units.each_value {|v|  if v.operative == false && v.maned then v.fix end}
 			$gps.robot_out if $gps.operative == true
 	else
-		puts "!! No power to oprate any unit."
+		puts "\t<< No power to oprate any unit! >>"
 	end
 	
 	state_limit($air)
@@ -575,7 +652,7 @@ def next_turn
 	if $story_counter.amount == 4 && $hq.storage.include?($jack) && $hq.storage.include?($marvin) && $hq.storage.include?($dazh) && $hq.storage.include?($laneny) then story_party end
 	if $story_counter.amount == 3 && $workshop.robot == $jack then story_found end
 	if $story_counter.amount.between?(1,2) && $workshop.robot == $jack then $story_counter.amount += 1 end
-	if $story_counter.amount == 0 && $jack.level == 3 then story_check end
+	if $story_counter.amount == 0 && $jack.level > 2 && $rescue_time.amount.between?(5,10) then story_check end
 	
 	end_game
 end
@@ -585,35 +662,69 @@ end
 def event_happened
 	def_check("event_happened")
 	event_current = $event_order.shift
-	if event_current == "balloon"
-		if $dazh.level == 3 && $viewer.robot == $dazh
-			event_current = $balloon
-		else
-			event_current = $nothing
-		end
-	elsif event_current == $nothing
-		event_current = $nothing
-	end	
-		
-	if event_current == "battery"
-		if $dazh.level == 3 && $viewer.robot == $dazh
-			event_current = $bat_found
-		else
-			event_current = $bat_loss
-		end
-	elsif event_current == $nothing
-		event_current = $nothing
+
+	case event_current
+	when $balloon
+		if $dazh.level == 3 && $viewer.robot == $dazh then event_current = $balloon and puts "\t>> Dazh: I found an Air Balloon floating our way." else event_current = $nothing end
+		##puts "1"
+	when $bat_found
+		##puts "2"
+		if $dazh.level == 3 && $viewer.robot == $dazh then event_current = $bat_found and puts "\t>> Dazh: Luck is on our favor. I found an Extre battery." else event_current = $nothing end
 	end
 	
+	case event_current
+	when $nothing
+		puts "\t<< Another quiet hour. >>"
+	when $air_loss
+		puts "\t<< In the last hour we have lost some Air. >>"
+	when $meteor
+		puts "\t<< In the last hour we suffered from a Meteor hit. >>"
+	when $miracle
+		puts "\t<< This old ship manged to juiced up a little!!! >>"
+	end
+
 	event_current.effect
-	puts "\t>> #{event_current.name} occurred. <<"
-	puts ""
 end
 
 #--------------- GAME !!!! --------------
 
 def main_game_screen
-	puts "you are here!!"
+	def_check("main_game_screen")
+	while true
+	
+		line
+		main_game_screen_message
+		line
+		prompt
+		
+		case $command
+		when "s"
+		int_game
+		story_start
+		when "q"
+		puts "\t<< You have Quit the game.>>"
+		puts ""
+		exit(0)
+		when "c"
+		credits
+		when "p"
+		party
+		else
+		puts "\t<< Please type again. >>"
+		end
+	end
+end
+
+def main_game_screen_message
+	def_check("main_game_screen_message")
+	puts """
+	<< StarShip AI 2 >>
+	
+	  s - start game
+	  q - quit game
+	  c - credits	"""
+	if $story_counter.amount == 5 then puts "\t  p - party_invitation" end
+	puts ""
 end
 
 
@@ -628,16 +739,15 @@ def main
 		
 		case $command
 		when "q"
-			puts "You have Quit the game."
-			exit(0)
+			main_game_screen
 		when "?"
 			help
 		when "n"
 			next_turn
 		when "m"
 			maintain
-		when "f", "fix"
-			fix
+		when "c"
+			credits
 #Robots
 		when "s", "send"
 			robot_to_storage
@@ -656,18 +766,12 @@ def main
 #Units
 		when "uf"
 			unit_fix
-		when "uu"
-			unit_upgrade
 		when "us"
 			unit_status
 		when "ui"
 			units_info
 		when "u?"
 			help_unit
-		when "v"
-			view
-		when "v?"
-			view_code		
 		when "p?", "party?"
 			party
 #Teasters
@@ -677,20 +781,23 @@ def main
 			$check = !$check
 		when "sr"
 			state_report
-		when "t1"	
-			$air.amount += 30
-			$shield.amount += 30
-			$power.amount += 60		
-		when "t2"
-			v = 5 #"yes"
-			if v.is_a? String then puts "String!!" end
-			if v.is_a? Integer then puts "Integer!!" end
+		when "t?"
+			help_program
+		when "sb"	
+			$air.amount += 300
+			$shield.amount += 300
+			$power.amount += 600		
+		when "t1"
+			$power.amount += $power_amount[:upgrade]
+		when "t1"
+			$event_order.each{|a| puts a.name}
 		when "t3"
-			puts $event_order[0].name
+
 		else
-			puts ">> Try to Type again."
+			puts "\t<< Try to Type again. >>"
 		end
 	end
 end
 
-main
+
+main_game_screen
