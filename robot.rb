@@ -18,12 +18,13 @@ class Robot
 		
 			Name:  #{@name}
 			Oper:  #{@operative}
-			level: #{@level}
+			Level: #{@level}
 			Unit:  #{@unit.name}
 			
-			Fixing by: #{@robot.name}
-			Maned:     #{@maned}
+			Fixer: #{@robot.name}
+			Maned: #{@maned}
 		"""
+		STDIN.gets
 	end
 	
 	def change_unit(unit)
@@ -33,6 +34,7 @@ class Robot
 		end
 		@unit.maned = false
 		@unit.robot = $robots[:empty]
+		#@unit.storage.push(self) --- solved the problem of not going back to HQ
 		@unit = unit
 	end
 

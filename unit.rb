@@ -30,7 +30,7 @@ class Unit
 			print storage_list
 			puts ""
 		end
-
+		STDIN.gets
 	end
 
 	def breakdown

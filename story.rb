@@ -3,12 +3,12 @@ def story_start
 	puts """
 	>> A-48: Good news! Most of the more pleasant crew members are alive.
 	         Unfortunately The Ship is in a bad state....
-	         So let's try to keep it in one piece until the rescue team will arrive. """
-	STDIN.gets
-	puts """\t         I Think one of the Robots is working well enough to start fix this ship.
-	         Look in the ship manuels (?) for some explantions."""
-	STDIN.gets
-	puts "\t         Good Luck to us all. :)"
+	         So let's try to keep it in one piece until the rescue team will arrive.
+	
+			I Think one of the Robots is working well enough to start fix this ship.
+	        Look in the ship manuels (?) for some explantions.
+	 
+	        Good Luck to us all. :)"""
 	STDIN.gets
 	main
 end
@@ -33,7 +33,7 @@ def story_party
 	STDIN.gets
 	puts "\t>> Jack: I have some marvelus news!"
 	STDIN.gets
-	puts "\t>> Marvin: How can you open the BlackBox and get marvelus news?"
+	puts "\t>> Marvin: How can one open the BlackBox and get marvelus news?"
 	STDIN.gets
 	puts "\t>> Laneny: uncommon, but possible."
 	STDIN.gets
@@ -91,6 +91,7 @@ def story_party
 				p    a        a  r    r     t        y    !!
 			"""
 			$story_counter.amount += 1
+			STDIN.gets
 			main_game_screen
 		when "n", "no"
 			puts "\t>> Jack: O.... Well.... I guess we can wait..."

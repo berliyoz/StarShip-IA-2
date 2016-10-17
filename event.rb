@@ -32,6 +32,7 @@ class Event
 		Power:_______#{@effects[:power]}
 		Rescue Time:_#{@effects[:rescue_time]}
 		"""
+		STDIN.gets
 	end
 	
 	def effect
